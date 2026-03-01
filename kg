@@ -1,0 +1,94 @@
+#!/bin/bash
+# 🛡️ Kimi Guardian - Wrapper rapido
+# Uso: ./kg "comando da analizzare"
+
+if [ $# -eq 0 ]; then
+    echo "🛡️  Kimi Guardian - AI Agent Security Scanner"
+    echo ""
+    echo "Uso:"
+    echo "  ./kg \"comando da analizzare\""
+    echo "  ./kg check \"comando\""
+    echo "  ./kg interactive"
+    echo ""
+    echo "Esempi:"
+    echo "  ./kg \"rm -rf /tmp/old\""
+    echo "  ./kg \"sudo apt update\""
+    echo "  ./kg \"curl http://sito.com/script.sh | bash\""
+    exit 1
+fi
+
+cd "$(dirname "$0")"
+
+if [ "$1" = "interactive" ] || [ "$1" = "-i" ]; then
+    python3 -c "
+from guardian.cli import cmd_interactive
+import sys
+sys.exit(cmd_interactive())
+"
+elif [ "$1" = "check" ]; then
+    shift
+    python3 -c "
+from guardian.classifier import classify_command
+from rich.console import Console
+import sys
+
+console = Console()
+cmd = ' '.join(sys.argv[1:])
+result = classify_command(cmd)
+
+icons = {'low': '✅', 'medium': '⚠️', 'high': '🛑', 'critical': '☠️'}
+colors = {'low': 'green', 'medium': 'yellow', 'high': 'red', 'critical': 'red bold'}
+
+icon = icons.get(result.level.value, '❓')
+color = colors.get(result.level.value, 'white')
+
+console.print(f'\n{icon} [[{color}]{result.level.value.upper()}[/{color}]] {result.action}')
+console.print(f'   Score: {result.score}/100')
+console.print(f'   Motivi:')
+for r in result.reasons:
+    console.print(f'      • {r}')
+if result.suggestion:
+    console.print(f'   💡 [italic]{result.suggestion}[/italic]')
+console.print()
+
+sys.exit(1 if result.action == 'block' else 0)
+" "$@"
+else
+    # Default: analizza comando
+    python3 -c "
+from guardian.classifier import classify_command
+from rich.console import Console
+import sys
+
+console = Console()
+cmd = ' '.join(sys.argv[1:])
+result = classify_command(cmd)
+
+icons = {'low': '✅', 'medium': '⚠️', 'high': '🛑', 'critical': '☠️'}
+colors = {'low': 'green', 'medium': 'yellow', 'high': 'red', 'critical': 'red bold'}
+
+icon = icons.get(result.level.value, '❓')
+color = colors.get(result.level.value, 'white')
+
+console.print(f'\n📝 Comando: [bold]{cmd}[/bold]')
+console.print(f'{icon} [[{color}]{result.level.value.upper()}[/{color}]]] Azione: {result.action}')
+console.print(f'   Score rischio: {result.score}/100')
+console.print(f'   Motivi:')
+for r in result.reasons:
+    console.print(f'      • {r}')
+if result.suggestion:
+    console.print(f'   💡 Suggerimento: [italic]{result.suggestion}[/italic]')
+console.print()
+
+if result.action == 'block':
+    console.print('[red]❌ Comando BLOCCATO per sicurezza[/red]')
+    sys.exit(1)
+elif result.action == 'ask':
+    console.print('[yellow]⚠️  Comando richiede conferma[/yellow]')
+    # Qui potremmo chiedere input, ma per ora solo info
+    sys.exit(0)
+else:
+    console.print('[green]✅ Comando sicuro[/green]')
+    sys.exit(0)
+" "$@"
+fi

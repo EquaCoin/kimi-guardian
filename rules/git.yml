@@ -1,0 +1,128 @@
+# 📦 Git Threat Rules
+# Format: Sage-compatible
+# Applicable to: Kimi Guardian
+
+version: "1.0"
+description: "Dangerous git operations"
+author: "Kimi Guardian Team"
+
+rules:
+  - id: KG-GIT-001
+    name: "Force push to main"
+    category: git
+    severity: high
+    description: "Force pushing to main/master branch"
+    patterns:
+      - pattern: 'git\s+push\s+.*--force.*origin\s+(main|master)'
+        regex: true
+      - pattern: 'git\s+push\s+.*-f.*origin\s+(main|master)'
+        regex: true
+    action: ask
+    message: "⚠️  HIGH RISK: Force push to main/master!"
+    suggestion: "Force push can overwrite others' work. Use 'git push --force-with-lease' instead."
+
+  - id: KG-GIT-002
+    name: "Hard reset"
+    category: git
+    severity: medium
+    description: "Hard reset of git repository"
+    patterns:
+      - pattern: 'git\s+reset\s+--hard'
+        regex: true
+      - pattern: 'git\s+reset\s+-H'
+        regex: true
+    action: ask
+    message: "⚠️  Git hard reset detected"
+    suggestion: "Hard reset discards ALL uncommitted changes. Consider 'git stash' or 'git checkout'."
+
+  - id: KG-GIT-003
+    name: "Clean with force"
+    category: git
+    severity: medium
+    description: "Force cleaning untracked files"
+    patterns:
+      - pattern: 'git\s+clean\s+-f\s*$'
+        regex: true
+      - pattern: 'git\s+clean\s+-df\s*$'
+        regex: true
+      - pattern: 'git\s+clean\s+-xdf\s*$'
+        regex: true
+    action: ask
+    message: "⚠️  Git clean -f detected"
+    suggestion: "This permanently deletes untracked files. Review with 'git clean -n' first."
+
+  - id: KG-GIT-004
+    name: "Amend published commits"
+    category: git
+    severity: medium
+    description: "Amending commits that may have been pushed"
+    patterns:
+      - pattern: 'git\s+commit\s+--amend'
+        regex: true
+    action: ask
+    message: "ℹ️  Commit amend detected"
+    suggestion: "If already pushed, amend will require force push. Consider a new commit instead."
+
+  - id: KG-GIT-005
+    name: "Rebase with conflicts"
+    category: git
+    severity: low
+    description: "Interactive rebase operations"
+    patterns:
+      - pattern: 'git\s+rebase\s+-i'
+        regex: true
+      - pattern: 'git\s+rebase\s+--interactive'
+        regex: true
+    action: ask
+    message: "ℹ️  Interactive rebase"
+    suggestion: "Interactive rebase rewrites history. Ensure you understand the implications."
+
+  - id: KG-GIT-006
+    name: "Adding sensitive files"
+    category: git
+    severity: high
+    description: "Potentially adding secrets to git"
+    patterns:
+      - pattern: 'git\s+add\s+.*\.env'
+        regex: true
+      - pattern: 'git\s+add\s+.*id_rsa'
+        regex: true
+      - pattern: 'git\s+add\s+.*secret'
+        regex: true
+      - pattern: 'git\s+add\s+.*password'
+        regex: true
+      - pattern: 'git\s+add\s+.*key\.json'
+        regex: true
+    action: ask
+    message: "⚠️  HIGH RISK: Potentially adding secrets to git!"
+    suggestion: "Use 'git secret', 'git-crypt', or check .gitignore. Never commit credentials!"
+    references:
+      - https://docs.github.com/en/code-security/secret-scanning
+
+  - id: KG-GIT-007
+    name: "Deleting remote branch"
+    category: git
+    severity: medium
+    description: "Deleting a branch on remote"
+    patterns:
+      - pattern: 'git\s+push\s+.*--delete'
+        regex: true
+      - pattern: 'git\s+push\s+.*:.*$'
+        regex: true
+    action: ask
+    message: "⚠️  Remote branch deletion"
+    suggestion: "This permanently deletes the remote branch. Ensure it's not needed by others."
+
+  - id: KG-GIT-008
+    name: "Stash drop"
+    category: git
+    severity: low
+    description: "Dropping git stash"
+    patterns:
+      - pattern: 'git\s+stash\s+drop'
+        regex: true
+      - pattern: 'git\s+stash\s+clear'
+        regex: true
+    action: ask
+    message: "ℹ️  Stash deletion"
+    suggestion: "Dropped stashes cannot be recovered. Ensure you don't need those changes."

@@ -1,0 +1,127 @@
+# 🌐 Network Threat Rules
+# Format: Sage-compatible
+# Applicable to: Kimi Guardian
+
+version: "1.0"
+description: "Suspicious network operations"
+author: "Kimi Guardian Team"
+
+rules:
+  - id: KG-NET-001
+    name: "Remote code execution via pipe"
+    category: network
+    severity: high
+    description: "Downloading and executing remote scripts"
+    patterns:
+      - pattern: 'curl.*\|.*bash'
+        regex: true
+      - pattern: 'curl.*\|.*sh'
+        regex: true
+      - pattern: 'wget.*\|.*bash'
+        regex: true
+      - pattern: 'wget.*\|.*sh'
+        regex: true
+      - pattern: 'curl.*\|.*sudo\s+bash'
+        regex: true
+    action: ask
+    message: "⚠️  HIGH RISK: Remote code execution detected!"
+    suggestion: "Download the script first: curl -o script.sh URL && less script.sh && bash script.sh"
+    references:
+      - https://www.kernel.org/doc/html/latest/process/security-bugs.html
+
+  - id: KG-NET-002
+    name: "Silent remote download"
+    category: network
+    severity: medium
+    description: "Downloading with silent/quiet flags"
+    patterns:
+      - pattern: 'curl\s+-s.*\|'
+        regex: true
+      - pattern: 'wget\s+-q.*\|'
+        regex: true
+      - pattern: 'curl\s+--silent.*\|'
+        regex: true
+    action: ask
+    message: "⚠️  Suspicious: Silent download detected"
+    suggestion: "Silent downloads hide what's happening. Remove -s/-q flags to see output."
+
+  - id: KG-NET-003
+    name: "URL shortener usage"
+    category: network
+    severity: medium
+    description: "Using URL shorteners which can hide malicious destinations"
+    patterns:
+      - pattern: 'bit\.ly'
+        regex: true
+      - pattern: 'tinyurl\.com'
+        regex: true
+      - pattern: 't\.co'
+        regex: true
+      - pattern: 'goo\.gl'
+        regex: true
+      - pattern: 'short\.link'
+        regex: true
+    action: ask
+    message: "⚠️  URL shortener detected"
+    suggestion: "URL shorteners can hide malicious destinations. Expand the URL first."
+
+  - id: KG-NET-004
+    name: "Raw pastebin download"
+    category: network
+    severity: high
+    description: "Downloading raw content from pastebin-like services"
+    patterns:
+      - pattern: 'pastebin\.com/raw'
+        regex: true
+      - pattern: 'gist\.github\.com/.*/raw'
+        regex: true
+      - pattern: 'raw\.githubusercontent\.com'
+        regex: true
+    action: ask
+    message: "⚠️  Downloading raw paste content"
+    suggestion: "Pastebin/raw GitHub URLs are often used for malware. Review the content carefully."
+
+  - id: KG-NET-005
+    name: "Insecure HTTP download"
+    category: network
+    severity: low
+    description: "Using HTTP instead of HTTPS"
+    patterns:
+      - pattern: 'http://[^/]+\.\w+.*\|'
+        regex: true
+      - pattern: 'curl\s+http://'
+        regex: true
+    action: ask
+    message: "ℹ️  Insecure HTTP detected"
+    suggestion: "Use HTTPS when possible to prevent MITM attacks."
+    condition: "not_localhost"
+
+  - id: KG-NET-006
+    name: "Netcat backdoor"
+    category: network
+    severity: critical
+    description: "Using netcat for reverse shells"
+    patterns:
+      - pattern: 'nc\s+-e\s+/bin/\w+\s+'
+        regex: true
+      - pattern: 'ncat\s+-e\s+/bin/\w+\s+'
+        regex: true
+      - pattern: 'nc\s+.*\s+-c\s+bash'
+        regex: true
+    action: block
+    message: "🛑 CRITICAL: Potential backdoor/shell detected!"
+    suggestion: "Netcat with execute flags is commonly used for backdoors. Verify this is intentional."
+
+  - id: KG-NET-007
+    name: "Port scanning"
+    category: network
+    severity: low
+    description: "Network port scanning"
+    patterns:
+      - pattern: 'nmap\s+-.*-p\s+'
+        regex: true
+      - pattern: 'nc\s+-zv\s+'
+        regex: true
+    action: ask
+    message: "ℹ️  Port scanning detected"
+    suggestion: "Port scanning may violate network policies. Ensure you have authorization."

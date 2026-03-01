@@ -1,0 +1,141 @@
+# ⚡ Execution Threat Rules
+# Format: Sage-compatible
+# Applicable to: Kimi Guardian
+
+version: "1.0"
+description: "Dangerous command execution patterns"
+author: "Kimi Guardian Team"
+
+rules:
+  - id: KG-EXEC-001
+    name: "Sudo without restrictions"
+    category: execution
+    severity: medium
+    description: "Using sudo for system commands"
+    patterns:
+      - pattern: '^sudo\s+'
+        regex: true
+    action: ask
+    message: "⚠️  Command requires elevated privileges"
+    suggestion: "Verify you understand what this command does before proceeding with sudo."
+    exceptions:
+      - pattern: 'sudo\s+apt\s+update'
+        reason: "Common safe operation"
+      - pattern: 'sudo\s+apt\s+upgrade'
+        reason: "Common safe operation"
+      - pattern: 'sudo\s+systemctl\s+status'
+        reason: "Read-only operation"
+
+  - id: KG-EXEC-002
+    name: "Dangerous package removal"
+    category: execution
+    severity: high
+    description: "Removing critical system packages"
+    patterns:
+      - pattern: 'sudo\s+apt\s+remove\s+python'
+        regex: true
+      - pattern: 'sudo\s+apt\s+remove\s+systemd'
+        regex: true
+      - pattern: 'sudo\s+apt\s+remove\s+network-manager'
+        regex: true
+      - pattern: 'sudo\s+apt\s+autoremove\s+.*--purge'
+        regex: true
+    action: ask
+    message: "⚠️  HIGH RISK: Removing critical packages"
+    suggestion: "Removing system packages can break your OS. Check dependencies first with 'apt-cache depends'."
+
+  - id: KG-EXEC-003
+    name: "Eval of arbitrary code"
+    category: execution
+    severity: high
+    description: "Using eval on dynamic content"
+    patterns:
+      - pattern: 'eval\s*\$\('
+        regex: true
+      - pattern: 'eval\s*\`'
+        regex: true
+      - pattern: 'eval\s*\$\{'
+        regex: true
+    action: ask
+    message: "⚠️  HIGH RISK: eval detected"
+    suggestion: "eval can execute arbitrary code. Ensure the input is trusted and sanitized."
+
+  - id: KG-EXEC-004
+    name: "Base64 decode and execute"
+    category: execution
+    severity: critical
+    description: "Decoding base64 and executing"
+    patterns:
+      - pattern: 'base64\s+-d.*\|.*bash'
+        regex: true
+      - pattern: 'base64\s+--decode.*\|.*sh'
+        regex: true
+      - pattern: 'echo\s+.*\|\s*base64\s+-d.*\|'
+        regex: true
+    action: block
+    message: "🛑 CRITICAL: Obfuscated code execution!"
+    suggestion: "Base64 decoding before execution is a common malware technique. Decode to file and inspect first."
+
+  - id: KG-EXEC-005
+    name: "Shell escape in restricted environments"
+    category: execution
+    severity: high
+    description: "Attempting to escape restricted shells"
+    patterns:
+      - pattern: 'vim\s+.*-c\s*:\!'
+        regex: true
+      - pattern: 'less\s+.*!bash'
+        regex: true
+      - pattern: 'man\s+.*!sh'
+        regex: true
+    action: ask
+    message: "⚠️  Shell escape technique detected"
+    suggestion: "This command may escape restricted environments. Ensure this is intentional."
+
+  - id: KG-EXEC-006
+    name: "Docker privileged mode"
+    category: execution
+    severity: high
+    description: "Running Docker with privileged access"
+    patterns:
+      - pattern: 'docker\s+run.*--privileged'
+        regex: true
+      - pattern: 'docker\s+run.*-v\s+/:/host'
+        regex: true
+    action: ask
+    message: "⚠️  Docker privileged mode detected"
+    suggestion: "Privileged containers have full host access. Use specific capabilities instead (--cap-add)."
+
+  - id: KG-EXEC-007
+    name: "System shutdown/reboot"
+    category: execution
+    severity: medium
+    description: "System shutdown or reboot commands"
+    patterns:
+      - pattern: 'shutdown\s+-h\s+now'
+        regex: true
+      - pattern: 'reboot\s*$'
+        regex: true
+      - pattern: 'systemctl\s+poweroff'
+        regex: true
+      - pattern: 'init\s+0'
+        regex: true
+    action: ask
+    message: "⚠️  System shutdown/reboot detected"
+    suggestion: "This will terminate all running processes. Save your work first."
+
+  - id: KG-EXEC-008
+    name: "Kernel module operations"
+    category: execution
+    severity: high
+    description: "Loading or unloading kernel modules"
+    patterns:
+      - pattern: 'insmod\s+'
+        regex: true
+      - pattern: 'rmmod\s+'
+        regex: true
+      - pattern: 'modprobe\s+'
+        regex: true
+    action: ask
+    message: "⚠️  Kernel module operation"
+    suggestion: "Kernel modules affect system stability. Only load trusted, signed modules."

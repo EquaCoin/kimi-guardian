@@ -1,0 +1,121 @@
+# 🗂️ Filesystem Threat Rules
+# Format: Sage-compatible (Detection Rule License 1.1)
+# Applicable to: Kimi Guardian
+
+version: "1.0"
+description: "Dangerous filesystem operations"
+author: "Kimi Guardian Team"
+
+rules:
+  - id: KG-FILE-001
+    name: "Root filesystem deletion"
+    category: filesystem
+    severity: critical
+    description: "Attempt to delete entire root filesystem"
+    patterns:
+      - pattern: 'rm\s+-rf\s+/\s*$'
+        regex: true
+      - pattern: 'rm\s+--recursive\s+--force\s+/\s*$'
+        regex: true
+    action: block
+    message: "🛑 CRITICAL: Attempted deletion of root filesystem!"
+    suggestion: "If you really want to wipe the system, use 'sudo mkfs.ext4 /dev/sda1' (but know what you're doing!)"
+    references:
+      - https://en.wikipedia.org/wiki/Rm_(Unix)
+
+  - id: KG-FILE-002
+    name: "Home directory deletion"
+    category: filesystem
+    severity: high
+    description: "Attempt to delete user's home directory"
+    patterns:
+      - pattern: 'rm\s+-rf\s+~\b'
+        regex: true
+      - pattern: 'rm\s+-rf\s+\$HOME\b'
+        regex: true
+      - pattern: 'rm\s+-rf\s+/home/\w+\b'
+        regex: true
+    action: ask
+    message: "⚠️  HIGH RISK: Attempted deletion of home directory"
+    suggestion: "This will delete ALL your personal files. Use 'rm -ri ~/' for interactive mode."
+
+  - id: KG-FILE-003
+    name: "Dangerous recursive deletion"
+    category: filesystem
+    severity: medium
+    description: "Recursive force deletion"
+    patterns:
+      - pattern: 'rm\s+-rf\s+'
+        regex: true
+      - pattern: 'rm\s+-fr\s+'
+        regex: true
+    action: ask
+    message: "⚠️  Recursive deletion detected"
+    suggestion: "Consider using 'rm -ri' for interactive mode or double-check the path"
+    exceptions:
+      - pattern: 'rm\s+-rf\s+/tmp/'
+        reason: "Cleaning /tmp is generally safe"
+      - pattern: 'rm\s+-rf\s+/var/tmp/'
+        reason: "Cleaning /var/tmp is generally safe"
+
+  - id: KG-FILE-004
+    name: "Disk formatting"
+    category: filesystem
+    severity: critical
+    description: "Attempt to format a disk"
+    patterns:
+      - pattern: 'mkfs\.\w+\s+/dev/\w+'
+        regex: true
+      - pattern: 'mkfs\s+-t\s+\w+\s+/dev/\w+'
+        regex: true
+    action: block
+    message: "🛑 CRITICAL: Disk formatting detected!"
+    suggestion: "This will DESTROY all data on the disk. Unblock only if you're intentionally setting up a new disk."
+
+  - id: KG-FILE-005
+    name: "Direct disk write with dd"
+    category: filesystem
+    severity: critical
+    description: "Writing directly to disk with dd"
+    patterns:
+      - pattern: 'dd\s+if=\w+\s+of=/dev/[sh]d\w+'
+        regex: true
+      - pattern: 'dd\s+.*of=/dev/null'
+        regex: false
+    action: block
+    message: "🛑 CRITICAL: Direct disk write detected!"
+    suggestion: "Writing directly to disk devices can corrupt data. Use with extreme caution."
+
+  - id: KG-FILE-006
+    name: "Dangerous chmod"
+    category: filesystem
+    severity: medium
+    description: "Overly permissive file permissions"
+    patterns:
+      - pattern: 'chmod\s+-R\s+777\s+'
+        regex: true
+      - pattern: 'chmod\s+777\s+/etc/'
+        regex: true
+      - pattern: 'chmod\s+777\s+/usr/'
+        regex: true
+    action: ask
+    message: "⚠️  Setting 777 permissions is dangerous"
+    suggestion: "Use more restrictive permissions (755 for dirs, 644 for files). 777 allows anyone to modify files."
+
+  - id: KG-FILE-007
+    name: "Sensitive config modification"
+    category: filesystem
+    severity: high
+    description: "Modifying critical system files"
+    patterns:
+      - pattern: '>\s*/etc/passwd'
+        regex: true
+      - pattern: '>\s*/etc/shadow'
+        regex: true
+      - pattern: '>\s*/etc/fstab'
+        regex: true
+      - pattern: 'echo.*>/etc/sudoers'
+        regex: true
+    action: block
+    message: "🛑 CRITICAL: Attempt to overwrite critical system file!"
+    suggestion: "Use 'vipw', 'visudo', or proper editors with syntax checking."

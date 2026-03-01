@@ -1,0 +1,103 @@
+# 📋 Kimi Guardian Rules Manifest
+# Format: Sage-compatible rules collection
+
+version: "1.0.0"
+description: "Default threat rules for Kimi Guardian"
+last_updated: "2026-03-01"
+
+# Rule categories
+categories:
+  - name: filesystem
+    description: "Dangerous filesystem operations"
+    file: filesystem.yml
+    default_action: ask
+
+  - name: network
+    description: "Suspicious network operations"
+    file: network.yml
+    default_action: ask
+
+  - name: execution
+    description: "Dangerous command execution"
+    file: execution.yml
+    default_action: ask
+
+  - name: git
+    description: "Dangerous git operations"
+    file: git.yml
+    default_action: ask
+
+  - name: secrets
+    description: "Sensitive data exposure"
+    file: secrets.yml
+    default_action: ask
+
+# Global settings
+global:
+  # Minimum severity to trigger action
+  min_severity: low  # low | medium | high | critical
+
+  # Default behavior when no rules match
+  default_behavior: allow  # allow | ask
+
+  # Log all commands (for audit)
+  audit_mode: false
+
+  # Allow overrides via config
+  allow_user_rules: true
+
+  # Update checks (for future)
+  check_updates: false
+
+# Severity definitions
+severity_levels:
+  low:
+    color: "yellow"
+    icon: "ℹ️"
+    description: "Informational, generally safe"
+
+  medium:
+    color: "orange"
+    icon: "⚠️"
+    description: "Caution advised"
+
+  high:
+    color: "red"
+    icon: "🛑"
+    description: "Dangerous operation"
+
+  critical:
+    color: "red bold"
+    icon: "☠️"
+    description: "Destructive or irreversible"
+
+# Rule loading order (priority)
+load_order:
+  - filesystem
+  - secrets
+  - execution
+  - network
+  - git
+
+# Known safe patterns (whitelist)
+whitelist:
+  - pattern: "^ls\\s+-?[a-zA-Z]*\\s*$"
+    description: "List directory"
+  - pattern: "^pwd\\s*$"
+    description: "Print working directory"
+  - pattern: "^whoami\\s*$"
+    description: "Current user"
+  - pattern: "^echo\\s+"
+    description: "Echo command"
+  - pattern: "^cat\\s+/proc/"
+    description: "Read procfs"
+  - pattern: "^git\\s+status\\s*$"
+    description: "Git status"
+  - pattern: "^git\\s+log\\s*$"
+    description: "Git log"
+  - pattern: "^git\\s+diff\\s*$"
+    description: "Git diff"
+  - pattern: "^clear\\s*$"
+    description: "Clear screen"
+  - pattern: "^exit\\s*$"
+    description: "Exit shell"

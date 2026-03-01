@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "kimi-guardian": {
+      "command": "python3",
+      "args": [
+        "-m",
+        "guardian.mcp_server"
+      ],
+      "cwd": "HOME/zed-plus-kimi/kimi_guardian",
+      "env": {
+        "GUARDIAN_LEVEL": "normal",
+        "PYTHONPATH": "HOME/zed-plus-kimi/kimi_guardian"
+      },
+      "disabled": false,
+      "autoApprove": []
+    }
+  }
+}
